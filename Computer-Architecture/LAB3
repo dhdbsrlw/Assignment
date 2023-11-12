@@ -1,0 +1,83 @@
+# Assignment: 피보나치 수열 재귀문으로 구현
+# Output: f(1), f(2), ... f(10) 의 값을 지정된 메모리주소에 순차적으로 저장
+
+# 반복문 + 재귀 조합으로 전체 코드 실행시간이 약 6분 정도 소요됩니다. 참고 부탁드립니다.
+
+# initialization
+# $s0 = (base address), $s1 = i
+  lui  $s0, 0x0001
+  ori  $s0, $s0, 0xF000  # $s0 = 0x0001F000
+  addiu $sp, $0, 0x1000  # 4096 (Dec) 에서 시작 
+  addiu  $s1, $0, 2  # i = 2 # f(3) 부터 시작
+  addiu  $t5, $0, 10  # $t5 = 10
+  
+# store ahead
+  addiu  $t3, $0, 1
+  sw  $t3, 0($s0)  
+  sw  $t3, 4($s0)
+
+# prepare for next
+  addiu  $t3, $0, 0
+  sw  $t3, 8($s0)  # 일단 0 저장
+
+loop: 
+  slt  $t0, $s1, $t5
+  beq  $t0, $0, done
+  nop
+
+  # main 함수
+  sll  $t0, $s1, 2  # i 이동
+  addu  $t0, $t0, $s0  # 새로운 address
+  addiu  $a0, $s1, 1  # 피보나치 함수 인자로 지정
+
+  jal fac
+  # 다음 명령어의 주소(PC+4)를 $ra에 저장하고 해당 address로 점프
+  nop
+
+  sw  $v0, 0($t0) # 메모리에 저장
+  addiu  $s1, $s1, 1  # i += 1
+  j  loop
+  nop
+
+# fibonacci 
+fac:
+  addiu  $sp, $sp, -16
+  sw  $t2, 12($sp)
+  sw  $t1, 8($sp)
+  sw  $t0, 4($sp)
+  sw  $ra, 0($sp)
+
+  slti  $t0, $a0, 2
+  bne  $t0, $0, func1_one  # 'n < 2' case
+  nop
+
+  addu  $t1, $a0, $0
+  # move  $t1, $a0
+  addiu  $a0, $a0, -1
+  jal  fac  # f(n-1) recursive call
+  nop
+
+  addu  $t2, $v0, $0
+  # move $t2, $v0  # record fac(n-1) return
+  addiu  $a0, $t1, -2
+  jal  fac  # f(n-2)  recursive call
+  nop
+ 
+  addu  $v0, $t2, $v0  # fac(n-1) + f(n-2)
+  j func1
+  nop
+
+func1_one:
+  addu  $v0, $a0, $0 
+  # move  $v0, $a0  # just return n
+
+func1:
+  lw  $ra, 0($sp)
+  lw  $t0, 4($sp)
+  lw  $t1, 8($sp)
+  lw  $t2, 12($sp)
+  addiu  $sp, $sp, 16
+  jr  $ra
+  nop
+
+done: # 종료
